@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>School Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- SIDEBAR -->
+<div class="fixed w-64 h-full bg-gray-900 text-white p-4">
+  <h1 class="text-xl font-bold mb-6">Admin Panel</h1>
+  <nav class="flex flex-col gap-3">
+    <button onclick="showPage('dashboard')" class="hover:bg-gray-700 p-2 rounded">Dashboard</button>
+    <button onclick="showPage('students')" class="hover:bg-gray-700 p-2 rounded">Students</button>
+    <button onclick="showPage('subjects')" class="hover:bg-gray-700 p-2 rounded">Subjects</button>
+    <button onclick="showPage('results')" class="hover:bg-gray-700 p-2 rounded">Results</button>
+  </nav>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="ml-64 p-6">
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="page">
+    <h2 class="text-2xl font-bold mb-4">Dashboard</h2>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div class="bg-white p-4 shadow rounded">Students: <span id="studentCount">0</span></div>
+      <div class="bg-white p-4 shadow rounded">Teachers: 0</div>
+      <div class="bg-white p-4 shadow rounded">Classes: 11</div>
+    </div>
+
+    <div class="mt-6 bg-white p-4 shadow rounded">
+      <h3 class="font-bold">Grade Structure</h3>
+      <p>PP1, PP2 | Grade 1–6 | Grade 7–9</p>
+    </div>
+  </div>
+
+  <!-- STUDENTS -->
+  <div id="students" class="page hidden">
+    <h2 class="text-2xl font-bold mb-4">Students</h2>
+
+    <div class="bg-white p-4 shadow rounded mb-4 flex gap-2">
+      <input id="name" placeholder="Name" class="border p-2">
+      <input id="grade" placeholder="Grade" class="border p-2">
+      <input id="photo" placeholder="Photo URL" class="border p-2">
+      <button onclick="addStudent()" class="bg-blue-500 text-white px-4 py-2">Add</button>
+    </div>
+
+    <table class="w-full bg-white shadow">
+      <thead>
+        <tr class="bg-gray-200">
+          <th>Name</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody id="studentTable"></tbody>
+    </table>
+  </div>
+
+  <!-- SUBJECTS -->
+  <div id="subjects" class="page hidden">
+    <h2 class="text-2xl font-bold mb-4">Subjects</h2>
+
+    <div class="bg-white p-4 shadow rounded flex gap-2">
+      <input id="subGrade" placeholder="Grade" class="border p-2">
+      <input id="subList" placeholder="Math,English,Science" class="border p-2">
+      <button onclick="saveSubjects()" class="bg-green-500 text-white px-4 py-2">Save</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="page hidden">
+    <h2 class="text-2xl font-bold mb-4">Results</h2>
+
+    <div class="bg-white p-4 shadow rounded">
+      <input id="studentId" placeholder="Student ID" class="border p-2">
+      <input id="subject" placeholder="Subject" class="border p-2">
+      <input id="opener" placeholder="Opener" class="border p-2">
+      <input id="midterm" placeholder="Midterm" class="border p-2">
+      <input id="endterm" placeholder="EndTerm" class="border p-2">
+      <button onclick="saveResult()" class="bg-purple-500 text-white px-4 py-2">Save</button>
+    </div>
+
+    <div id="ranking" class="mt-4 bg-white p-4 shadow rounded"></div>
+  </div>
+
+</div>
+
+<script>
+const API = "http://localhost:5000/api";
+
+/* NAVIGATION */
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+  document.getElementById(page).classList.remove("hidden");
+}
+
+/* STUDENTS */
+async function fetchStudents() {
+  const res = await fetch(API + "/students");
+  const data = await res.json();
+
+  document.getElementById("studentCount").innerText = data.length;
+
+  const table = document.getElementById("studentTable");
+  table.innerHTML = "";
+
+  data.forEach(s => {
+    table.innerHTML += `
+      <tr>
+        <td>${s.name}</td>
+        <td>${s.grade}</td>
+      </tr>
+    `;
+  });
+}
+
+async function addStudent() {
+  const student = {
+    name: document.getElementById("name").value,
+    grade: document.getElementById("grade").value,
+    photo: document.getElementById("photo").value
+  };
+
+  await fetch(API + "/students", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(student)
+  });
+
+  fetchStudents();
+}
+
+/* SUBJECTS */
+async function saveSubjects() {
+  const grade = document.getElementById("subGrade").value;
+  const subjects = document.getElementById("subList").value.split(",");
+
+  await fetch(API + "/subjects", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ grade, subjects })
+  });
+
+  alert("Saved!");
+}
+
+/* RESULTS */
+async function saveResult() {
+  const data = {
+    studentId: document.getElementById("studentId").value,
+    subject: document.getElementById("subject").value,
+    opener: Number(document.getElementById("opener").value),
+    midterm: Number(document.getElementById("midterm").value),
+    endterm: Number(document.getElementById("endterm").value)
+  };
+
+  const res = await fetch(API + "/results", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+
+  document.getElementById("ranking").innerHTML =
+    "<pre>" + JSON.stringify(result.rankings, null, 2) + "</pre>";
+}
+
+/* INIT */
+fetchStudents();
+</script>
+
+</body>
+</html>
